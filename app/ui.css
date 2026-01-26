@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@layer components {
+  .container-max {
+    @apply mx-auto max-w-6xl px-6;
+  }
+
+  .card {
+    @apply rounded-2xl border border-[rgb(var(--border))]/70 bg-[rgb(var(--card))] shadow-[0_12px_30px_-22px_rgba(0,0,0,0.55)];
+  }
+  .card-hd {
+    @apply px-5 py-4 border-b border-[rgb(var(--border))]/60;
+  }
+  .card-bd {
+    @apply p-5;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--muted))] px-4 py-2 text-sm font-medium transition;
+  }
+  .btn:hover {
+    @apply brightness-[1.04];
+  }
+  .btn:active {
+    @apply translate-y-[1px];
+  }
+  .btn:focus-visible {
+    @apply outline-none ring-2 ring-[rgb(var(--primary))]/45;
+  }
+
+  .btn-primary {
+    @apply border-[rgb(var(--primary))]/45 bg-[rgb(var(--primary))]/12;
+  }
+  .btn-primary:hover {
+    @apply bg-[rgb(var(--primary))]/16;
+  }
+
+  .btn-danger {
+    @apply border-[rgb(var(--danger))]/40 bg-[rgb(var(--danger))]/10;
+  }
+  .btn-danger:hover {
+    @apply bg-[rgb(var(--danger))]/14;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--card))] px-3 py-2 text-sm transition;
+  }
+  .input::placeholder {
+    @apply text-[rgb(var(--subtext))]/70;
+  }
+  .input:focus {
+    @apply outline-none ring-2 ring-[rgb(var(--primary))]/40 border-[rgb(var(--primary))]/45;
+  }
+
+  .select {
+    @apply w-full rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--card))] px-3 py-2 text-sm transition;
+  }
+  .select:focus {
+    @apply outline-none ring-2 ring-[rgb(var(--primary))]/40 border-[rgb(var(--primary))]/45;
+  }
+
+  .table {
+    @apply w-full text-sm;
+  }
+  .th {
+    @apply p-3 text-left text-[rgb(var(--subtext))] font-medium;
+  }
+  .td {
+    @apply p-3;
+  }
+  .tr {
+    @apply border-b border-[rgb(var(--border))]/55;
+  }
+  .tr:hover {
+    @apply bg-[rgb(var(--muted))]/70;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium;
+  }
+  .chip-ok {
+    @apply border-[rgb(var(--success))]/45 text-[rgb(var(--success))];
+  }
+  .chip-warn {
+    @apply border-[rgb(var(--warning))]/45 text-[rgb(var(--warning))];
+  }
+  .chip-muted {
+    @apply border-[rgb(var(--border))]/70 text-[rgb(var(--subtext))];
+  }
+
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6;
+  }
+  [data-theme="light"] .modal-backdrop {
+    @apply bg-black/25;
+  }
+  .modal {
+    @apply w-full max-w-lg rounded-2xl border border-[rgb(var(--border))]/70 bg-[rgb(var(--card))] shadow-[0_12px_30px_-22px_rgba(0,0,0,0.55)];
+  }
+
+  /* Small helpers */
+  .muted-text {
+    @apply text-[rgb(var(--subtext))];
+  }
+  .hairline {
+    @apply border-[rgb(var(--border))]/60;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    @apply rounded-xl bg-[rgb(var(--muted))]/70 animate-pulse;
+  }
+}

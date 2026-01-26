@@ -21,48 +21,59 @@ export default function LoginPage() {
       localStorage.setItem("token", res.data.token);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Login error");
+      setError(err?.response?.data?.message || err?.message || "Login error");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-2xl border p-6 space-y-4"
-      >
-        <h1 className="text-2xl font-semibold">Mini CRM Login</h1>
-
-        <div className="space-y-2">
-          <label className="text-sm">Username</label>
-          <input
-            className="w-full rounded-xl border px-3 py-2 bg-transparent"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+    <div className="min-h-screen grid place-items-center p-6">
+      <div className="w-full max-w-md card">
+        <div className="card-hd">
+          <div className="text-xl font-semibold">Mini CRM Login</div>
+          <div className="text-sm text-[rgb(var(--subtext))]">
+            Sign in to continue
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm">Password</label>
-          <input
-            type="password"
-            className="w-full rounded-xl border px-3 py-2 bg-transparent"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+        <form onSubmit={onSubmit} className="card-bd space-y-4">
+          <div className="space-y-1">
+            <label className="text-sm text-[rgb(var(--subtext))]">
+              Username
+            </label>
+            <input
+              className="input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="space-y-1">
+            <label className="text-sm text-[rgb(var(--subtext))]">
+              Password
+            </label>
+            <input
+              className="input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-        <button
-          disabled={loading}
-          className="w-full rounded-xl border px-3 py-2 hover:bg-white/5 disabled:opacity-50"
-        >
-          {loading ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
+          {error && (
+            <div className="text-sm text-[rgb(var(--danger))]">{error}</div>
+          )}
+
+          <button disabled={loading} className="btn btn-primary w-full">
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+
+          <div className="text-xs text-[rgb(var(--subtext))]">
+            Demo: <span className="font-medium">admin / admin123</span>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
