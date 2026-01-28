@@ -17,6 +17,13 @@ import {
   CheckSquare,
   Square,
   Info,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 type Client = {
@@ -65,8 +72,11 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
+  // search
   const [qInput, setQInput] = useState("");
   const [q, setQ] = useState("");
+
+  // filters/sort
   const [status, setStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
   const [course, setCourse] = useState("");
@@ -75,12 +85,15 @@ export default function ClientsPage() {
   >("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
+  // UI controls
+  const [filtersOpen, setFiltersOpen] = useState(false); // dropdown style
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
+  // modal
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -88,6 +101,7 @@ export default function ClientsPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // drawer
   const [drawerId, setDrawerId] = useState<number | null>(null);
   const drawerClient = useMemo(
     () => items.find((x) => x.id === drawerId) ?? null,
@@ -100,8 +114,16 @@ export default function ClientsPage() {
   );
   const reqIdRef = useRef(0);
 
+  const rangeText = useMemo(() => {
+    if (total === 0) return "0–0";
+    const start = (page - 1) * limit + 1;
+    const end = Math.min(page * limit, total);
+    return `${start}–${end}`;
+  }, [page, limit, total]);
+
+  // debounce search
   useEffect(() => {
-    const t = window.setTimeout(() => setQ(qInput.trim()), 350);
+    const t = window.setTimeout(() => setQ(qInput.trim()), 300);
     return () => window.clearTimeout(t);
   }, [qInput]);
 
@@ -163,7 +185,6 @@ export default function ClientsPage() {
           order,
         },
       });
-
       if (myReq !== reqIdRef.current) return;
 
       setItems(res.data.items);
@@ -176,8 +197,9 @@ export default function ClientsPage() {
         return next;
       });
     } catch (e: any) {
-      setError(e?.response?.data?.message || "Load error");
-      toast.error("Load error");
+      const msg = e?.response?.data?.message || "Load error";
+      setError(msg);
+      toast.error(msg);
     } finally {
       if (myReq === reqIdRef.current) setLoading(false);
     }
@@ -214,7 +236,6 @@ export default function ClientsPage() {
     if (!s.fullName.trim()) return "Full name majburiy";
     if (!s.phone.trim()) return "Phone majburiy";
     if (!s.course.trim()) return "Course majburiy";
-
     const normalized = onlyDigitsPhone(s.phone);
     const digits = normalized.replace(/\D/g, "");
     if (digits.length < 9) return "Phone juda qisqa";
@@ -284,7 +305,6 @@ export default function ClientsPage() {
   async function toggleField(id: number, field: "paymentStatus" | "status") {
     const prev = items;
 
-    // optimistic update
     setItems((arr) =>
       arr.map((c) => {
         if (c.id !== id) return c;
@@ -342,33 +362,58 @@ export default function ClientsPage() {
     setCourse("");
     setSort("createdAt");
     setOrder("desc");
-    setLimit(10);
     setPage(1);
     clearSelection();
     toast.info("Reset ✅");
   }
 
+  function toggleSort(
+    next: "createdAt" | "fullName" | "paymentStatus" | "status",
+  ) {
+    if (sort === next) {
+      setOrder((o) => (o === "asc" ? "desc" : "asc"));
+    } else {
+      setSort(next);
+      setOrder(next === "fullName" ? "asc" : "desc");
+    }
+    setPage(1);
+  }
+
+  function SortIcon({ col }: { col: typeof sort }) {
+    const active = sort === col;
+    if (!active)
+      return (
+        <ArrowUpDown
+          size={14}
+          className="opacity-60 transition-opacity duration-200"
+        />
+      );
+    return order === "asc" ? (
+      <ArrowUp
+        size={14}
+        className="opacity-90 transition-opacity duration-200"
+      />
+    ) : (
+      <ArrowDown
+        size={14}
+        className="opacity-90 transition-opacity duration-200"
+      />
+    );
+  }
+
+  const toolbarMeta = (
+    <div className="text-xs muted-text">
+      {loading
+        ? "Loading..."
+        : `Showing ${rangeText} of ${total} • Page ${page}/${pages}`}
+      {error && (
+        <span className="ml-2 text-[rgb(var(--danger))]">• {error}</span>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Clients</h1>
-          <p className="text-sm muted-text">
-            Search, filter, bulk actions, export, inline updates
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <button onClick={exportCsv} className="btn">
-            <Download size={16} /> Export CSV
-          </button>
-          <button onClick={openCreate} className="btn btn-primary">
-            <Plus size={16} /> Add client
-          </button>
-        </div>
-      </div>
-
       {/* Bulk bar */}
       {selected.size > 0 && (
         <div className="card">
@@ -380,10 +425,10 @@ export default function ClientsPage() {
               </span>
             </div>
             <div className="flex gap-2">
-              <button onClick={clearSelection} className="btn">
+              <button onClick={clearSelection} className="btn smooth">
                 <X size={16} /> Clear
               </button>
-              <button onClick={bulkDelete} className="btn btn-danger">
+              <button onClick={bulkDelete} className="btn btn-danger smooth">
                 <Trash2 size={16} /> Delete selected
               </button>
             </div>
@@ -391,189 +436,196 @@ export default function ClientsPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="card">
-        <div className="card-hd flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 font-semibold">
-            <Filter size={16} /> Filters & controls
-          </div>
-          <button className="btn" onClick={() => setFiltersOpen((v) => !v)}>
-            {filtersOpen ? "Hide" : "Show"}
-          </button>
-        </div>
+      {/* Clients list card: toolbar + filters dropdown inside same card */}
+      <div className="card overflow-hidden">
+        {/* Toolbar row: Search left of Export/Add; meta left above table (as requested) */}
+        <div className="card-hd">
+          <div className="flex flex-col gap-3">
+            {/* top toolbar */}
+            <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between w-full">
+                {/* left: search + export/add aligned */}
+                <div className="flex items-center gap-2 w-full">
+                  {/* Search (left of export/add) */}
+                  <div className="relative w-full max-w-[520px]">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--subtext))]">
+                      <Search size={16} />
+                    </span>
+                    <input
+                      className="input pl-9"
+                      value={qInput}
+                      onChange={(e) => setQInput(e.target.value)}
+                      placeholder="Search by name/phone…"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setQ(qInput.trim());
+                      }}
+                    />
+                  </div>
 
-        {filtersOpen && (
-          <div className="card-bd grid grid-cols-1 md:grid-cols-12 gap-3">
-            <div className="md:col-span-5">
-              <label className="text-sm muted-text">Search (name/phone)</label>
-              <div className="mt-1 flex gap-2">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgb(var(--subtext))]">
-                    <Search size={16} />
-                  </span>
-                  <input
-                    className="input pl-9"
-                    value={qInput}
-                    onChange={(e) => setQInput(e.target.value)}
-                    placeholder="Masalan: Aziz yoki +998901234567"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") setQ(qInput.trim());
-                    }}
-                  />
+                  <button
+                    onClick={() => load({ resetPage: true })}
+                    className="btn btn-primary smooth"
+                  >
+                    Search
+                  </button>
+
+                  {/* Export + Add on the RIGHT SIDE of search (same row) */}
+                  <div className="hidden md:flex items-center gap-2 ml-auto">
+                    <button onClick={exportCsv} className="btn smooth">
+                      <Download size={16} /> Export CSV
+                    </button>
+                    <button
+                      onClick={openCreate}
+                      className="btn btn-primary smooth"
+                    >
+                      <Plus size={16} /> Add client
+                    </button>
+                  </div>
                 </div>
-
-                <button
-                  onClick={() => load({ resetPage: true })}
-                  className="btn btn-primary"
-                >
-                  Search
-                </button>
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="text-sm muted-text">Status</label>
-              <select
-                className="select mt-1"
-                value={status}
-                onChange={(e) => {
-                  setStatus(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
+            {/* meta line (LEFT above table) */}
+            <div className="flex items-center justify-between gap-3">
+              {toolbarMeta}
 
-            <div className="md:col-span-2">
-              <label className="text-sm muted-text">Payment</label>
-              <select
-                className="select mt-1"
-                value={paymentStatus}
-                onChange={(e) => {
-                  setPaymentStatus(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">All</option>
-                <option value="paid">Paid</option>
-                <option value="unpaid">Unpaid</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-3">
-              <label className="text-sm muted-text">Course (contains)</label>
-              <input
-                className="input mt-1"
-                value={course}
-                onChange={(e) => {
-                  setCourse(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Masalan: Frontend"
-              />
-            </div>
-
-            <div className="md:col-span-3">
-              <label className="text-sm muted-text">Sort by</label>
-              <select
-                className="select mt-1"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as any)}
-              >
-                <option value="createdAt">createdAt</option>
-                <option value="fullName">fullName</option>
-                <option value="status">status</option>
-                <option value="paymentStatus">paymentStatus</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-sm muted-text">Order</label>
-              <select
-                className="select mt-1"
-                value={order}
-                onChange={(e) => setOrder(e.target.value as any)}
-              >
-                <option value="desc">desc</option>
-                <option value="asc">asc</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-sm muted-text">Page size</label>
-              <select
-                className="select mt-1"
-                value={String(limit)}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-5 flex items-end justify-between gap-2">
-              <div className="text-xs muted-text">
-                {loading
-                  ? "Loading..."
-                  : `Total: ${total} • Page ${page}/${Math.max(1, Math.ceil(total / limit))}`}
-                {error && (
-                  <span className="ml-2 text-[rgb(var(--danger))]">
-                    • {error}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <button onClick={resetAll} className="btn">
+              <div className="flex items-center gap-2">
+                <button className="btn smooth" onClick={resetAll}>
                   <RefreshCw size={16} /> Reset
                 </button>
+
+                <button
+                  className="btn smooth"
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  title="Filters"
+                >
+                  <Filter size={16} />
+                  Filters
+                  <span className="ml-1 inline-flex items-center opacity-80">
+                    {filtersOpen ? (
+                      <ChevronUp size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
+                  </span>
+                </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Table */}
-      <div className="card overflow-hidden">
-        <div className="card-hd flex items-center justify-between">
-          <div className="text-sm muted-text">
-            Showing {total === 0 ? 0 : (page - 1) * limit + 1}-
-            {Math.min(page * limit, total)} of {total}
+        {/* Filters dropdown area (same card) */}
+        <div
+          className={[
+            "border-t hairline",
+            "transition-all duration-200 ease-out",
+            filtersOpen
+              ? "opacity-100 max-h-[220px]"
+              : "opacity-0 max-h-0 overflow-hidden",
+          ].join(" ")}
+        >
+          <div className="card-bd">
+            {/* Single row, no wrap -> horizontal scroll */}
+            <div className="flex gap-3 items-end overflow-x-auto pb-1">
+              <div className="min-w-[160px]">
+                <label className="text-sm muted-text">Status</label>
+                <select
+                  className="select mt-1"
+                  value={status}
+                  onChange={(e) => {
+                    setStatus(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <div className="min-w-[170px]">
+                <label className="text-sm muted-text">Payment</label>
+                <select
+                  className="select mt-1"
+                  value={paymentStatus}
+                  onChange={(e) => {
+                    setPaymentStatus(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">All</option>
+                  <option value="paid">Paid</option>
+                  <option value="unpaid">Unpaid</option>
+                </select>
+              </div>
+
+              <div className="min-w-[220px]">
+                <label className="text-sm muted-text">Course</label>
+                <input
+                  className="input mt-1"
+                  value={course}
+                  onChange={(e) => {
+                    setCourse(e.target.value);
+                    setPage(1);
+                  }}
+                  placeholder="Masalan: Frontend"
+                />
+              </div>
+
+              <div className="min-w-[170px]">
+                <label className="text-sm muted-text">Sort</label>
+                <select
+                  className="select mt-1"
+                  value={sort}
+                  onChange={(e) => {
+                    setSort(e.target.value as any);
+                    setPage(1);
+                  }}
+                >
+                  <option value="createdAt">createdAt</option>
+                  <option value="fullName">fullName</option>
+                  <option value="status">status</option>
+                  <option value="paymentStatus">paymentStatus</option>
+                </select>
+              </div>
+
+              <div className="min-w-[140px]">
+                <label className="text-sm muted-text">Order</label>
+                <select
+                  className="select mt-1"
+                  value={order}
+                  onChange={(e) => {
+                    setOrder(e.target.value as any);
+                    setPage(1);
+                  }}
+                >
+                  <option value="desc">desc</option>
+                  <option value="asc">asc</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* small arrow control (requested) */}
+          <div className="px-5 pb-4">
             <button
-              className="btn"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
+              className="btn w-full justify-center smooth"
+              onClick={() => setFiltersOpen(false)}
+              title="Close filters"
             >
-              <ChevronLeft size={16} /> Prev
-            </button>
-            <button
-              className="btn"
-              disabled={page >= pages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next <ChevronRight size={16} />
+              <ChevronUp size={18} />
             </button>
           </div>
         </div>
 
+        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="table">
+          <table className="table table-fixed">
             <thead className="border-b hairline">
               <tr>
                 <th className="th w-[56px]">
                   <button
-                    className="btn px-2 py-1"
+                    className="btn px-2 py-1 smooth"
                     onClick={() =>
                       allSelectedOnPage
                         ? unselectAllOnPage()
@@ -592,12 +644,39 @@ export default function ClientsPage() {
                     )}
                   </button>
                 </th>
-                <th className="th">Client</th>
-                <th className="th">Course</th>
-                <th className="th">Status</th>
-                <th className="th">Payment</th>
-                <th className="th">Created</th>
-                <th className="th w-[230px]">Actions</th>
+
+                <th className="th w-[320px]">
+                  <SortableTh
+                    label="Client"
+                    active={sort === "fullName"}
+                    onClick={() => toggleSort("fullName")}
+                  >
+                    <SortIcon col="fullName" />
+                  </SortableTh>
+                </th>
+
+                <th className="th w-[220px]">Course</th>
+
+                {/* Combined column: status + payment */}
+                <th className="th w-[200px]">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="font-medium text-[rgb(var(--subtext))]">
+                      State
+                    </span>
+                  </div>
+                </th>
+
+                <th className="th w-[220px]">
+                  <SortableTh
+                    label="Created"
+                    active={sort === "createdAt"}
+                    onClick={() => toggleSort("createdAt")}
+                  >
+                    <SortIcon col="createdAt" />
+                  </SortableTh>
+                </th>
+
+                <th className="th w-[200px]">Actions</th>
               </tr>
             </thead>
 
@@ -609,23 +688,20 @@ export default function ClientsPage() {
                       <div className="h-8 w-8 skeleton" />
                     </td>
                     <td className="td">
-                      <div className="h-4 w-56 skeleton" />
-                      <div className="h-3 w-40 skeleton mt-2" />
+                      <div className="h-4 w-[260px] skeleton" />
+                      <div className="h-3 w-[180px] skeleton mt-2" />
                     </td>
                     <td className="td">
-                      <div className="h-4 w-28 skeleton" />
+                      <div className="h-4 w-[160px] skeleton" />
                     </td>
                     <td className="td">
-                      <div className="h-7 w-24 skeleton" />
+                      <div className="h-7 w-[170px] skeleton" />
                     </td>
                     <td className="td">
-                      <div className="h-7 w-24 skeleton" />
+                      <div className="h-4 w-[170px] skeleton" />
                     </td>
                     <td className="td">
-                      <div className="h-4 w-40 skeleton" />
-                    </td>
-                    <td className="td">
-                      <div className="h-9 w-44 skeleton" />
+                      <div className="h-9 w-[150px] skeleton" />
                     </td>
                   </tr>
                 ))
@@ -633,7 +709,7 @@ export default function ClientsPage() {
                 <tr>
                   <td
                     className="p-10 text-center text-sm muted-text"
-                    colSpan={7}
+                    colSpan={6}
                   >
                     No clients found. Try changing filters.
                   </td>
@@ -645,7 +721,7 @@ export default function ClientsPage() {
                     <tr key={c.id} className="tr">
                       <td className="td">
                         <button
-                          className="btn px-2 py-1"
+                          className="btn px-2 py-1 smooth"
                           onClick={() => toggleSelect(c.id)}
                           title="Select"
                         >
@@ -658,53 +734,73 @@ export default function ClientsPage() {
                       </td>
 
                       <td className="td">
-                        <div className="font-medium">{c.fullName}</div>
-                        <div className="text-xs muted-text">{c.phone}</div>
-                      </td>
-
-                      <td className="td">{c.course}</td>
-
-                      {/* FIXED CHIP DESIGN */}
-                      <td className="td">
-                        <StatusPill
-                          kind={c.status}
-                          onClick={() => toggleField(c.id, "status")}
-                        />
+                        <div className="td-truncate font-medium">
+                          {c.fullName}
+                        </div>
+                        <div className="td-truncate text-xs muted-text">
+                          {c.phone}
+                        </div>
                       </td>
 
                       <td className="td">
-                        <PaymentPill
-                          kind={c.paymentStatus}
-                          onClick={() => toggleField(c.id, "paymentStatus")}
-                        />
+                        <div className="td-truncate">{c.course}</div>
                       </td>
 
-                      <td className="td text-xs muted-text">
-                        {fmtDate(c.createdAt)}
+                      {/* Combined state cell */}
+                      <td className="td">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <StatusPill
+                              kind={c.status}
+                              onClick={() => toggleField(c.id, "status")}
+                              compact
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <PaymentPill
+                              kind={c.paymentStatus}
+                              onClick={() => toggleField(c.id, "paymentStatus")}
+                              compact
+                            />
+                          </div>
+                        </div>
                       </td>
 
                       <td className="td">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="td-truncate text-xs muted-text">
+                          {fmtDate(c.createdAt)}
+                        </div>
+                      </td>
+
+                      {/* Actions: details icon only, edit icon+text, delete icon only */}
+                      <td className="td">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setDrawerId(c.id)}
-                            className="btn"
+                            className="btn smooth px-3"
                             title="Details"
+                            aria-label="Details"
                           >
-                            <Info size={16} /> Details
+                            <Info size={16} />
                           </button>
+
                           <button
                             onClick={() => openEdit(c)}
-                            className="btn"
+                            className="btn smooth px-3"
                             title="Edit"
                           >
-                            <Pencil size={16} /> Edit
+                            <Pencil size={16} />
+                            <span className="hidden sm:inline">Edit</span>
                           </button>
+
                           <button
                             onClick={() => remove(c.id)}
-                            className="btn btn-danger"
+                            className="btn btn-danger smooth px-3"
                             title="Delete"
+                            aria-label="Delete"
                           >
-                            <Trash2 size={16} /> Delete
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -716,22 +812,56 @@ export default function ClientsPage() {
           </table>
         </div>
 
-        <div className="card-hd flex items-center justify-between">
-          <div className="text-xs muted-text">
-            Selected on page: {anySelectedOnPage ? "Yes" : "No"} • Total
-            selected: {selected.size}
+        {/* Bottom controls row: Page size left, Prev/Next right */}
+        <div className="card-hd flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm muted-text">Page size</span>
+            <select
+              className="select w-[110px]"
+              value={String(limit)}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
+
+            <span className="text-xs muted-text">
+              • Showing {rangeText} of {total}
+            </span>
           </div>
-          <div className="text-xs muted-text">
-            Tip: Enter bosib qidirish mumkin
+
+          <div className="flex items-center gap-2">
+            <button
+              className="btn smooth"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              <ChevronLeft size={16} /> Prev
+            </button>
+            <button
+              className="btn smooth"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next <ChevronRight size={16} />
+            </button>
           </div>
         </div>
       </div>
 
       {/* Drawer */}
       {drawerClient && (
-        <div className="modal-backdrop" onMouseDown={() => setDrawerId(null)}>
+        <div
+          className="modal-backdrop fade-in"
+          onMouseDown={() => setDrawerId(null)}
+        >
           <div
-            className="modal max-w-xl"
+            className="modal max-w-xl pop-in"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="card-hd flex items-center justify-between">
@@ -739,7 +869,7 @@ export default function ClientsPage() {
                 <div className="font-semibold">Client details</div>
                 <div className="text-xs muted-text">ID: {drawerClient.id}</div>
               </div>
-              <button className="btn" onClick={() => setDrawerId(null)}>
+              <button className="btn smooth" onClick={() => setDrawerId(null)}>
                 ✕
               </button>
             </div>
@@ -759,7 +889,7 @@ export default function ClientsPage() {
 
               <div className="flex justify-end gap-2">
                 <button
-                  className="btn"
+                  className="btn smooth"
                   onClick={() => {
                     setDrawerId(null);
                     openEdit(drawerClient);
@@ -768,7 +898,7 @@ export default function ClientsPage() {
                   <Pencil size={16} /> Edit
                 </button>
                 <button
-                  className="btn btn-danger"
+                  className="btn btn-danger smooth"
                   onClick={() => remove(drawerClient.id)}
                 >
                   <Trash2 size={16} /> Delete
@@ -781,8 +911,14 @@ export default function ClientsPage() {
 
       {/* Modal */}
       {open && (
-        <div className="modal-backdrop" onMouseDown={() => setOpen(false)}>
-          <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+        <div
+          className="modal-backdrop fade-in"
+          onMouseDown={() => setOpen(false)}
+        >
+          <div
+            className="modal pop-in"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             <div className="card-hd flex items-center justify-between">
               <div>
                 <div className="font-semibold">
@@ -790,7 +926,7 @@ export default function ClientsPage() {
                 </div>
                 <div className="text-xs muted-text">Fill details carefully</div>
               </div>
-              <button onClick={() => setOpen(false)} className="btn">
+              <button onClick={() => setOpen(false)} className="btn smooth">
                 ✕
               </button>
             </div>
@@ -871,13 +1007,13 @@ export default function ClientsPage() {
               )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
-                <button onClick={() => setOpen(false)} className="btn">
+                <button onClick={() => setOpen(false)} className="btn smooth">
                   Cancel
                 </button>
                 <button
                   disabled={saving}
                   onClick={save}
-                  className="btn btn-primary"
+                  className="btn btn-primary smooth"
                 >
                   {saving ? "Saving..." : "Save"}
                 </button>
@@ -890,20 +1026,53 @@ export default function ClientsPage() {
   );
 }
 
-/** ✅ NEW: Clean pill chips (no nested chip) */
+function SortableTh({
+  label,
+  active,
+  onClick,
+  children,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        "inline-flex items-center gap-2 rounded-lg px-2 py-1",
+        "transition-all duration-200 ease-out hover:bg-[rgb(var(--muted))]/60",
+        active ? "text-[rgb(var(--text))]" : "text-[rgb(var(--subtext))]",
+      ].join(" ")}
+      title="Sort"
+    >
+      <span className="font-medium">{label}</span>
+      <span className="transition-transform duration-200 ease-out">
+        {children}
+      </span>
+    </button>
+  );
+}
+
 function StatusPill({
   kind,
   onClick,
+  compact,
 }: {
   kind: "active" | "inactive";
   onClick: () => void;
+  compact?: boolean;
 }) {
   const active = kind === "active";
   return (
     <button
       onClick={onClick}
       className={[
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+        "inline-flex items-center gap-2 rounded-full border text-xs font-semibold",
+        compact ? "px-2.5 py-1" : "px-3 py-1.5",
+        "transition-all duration-200 ease-out hover:brightness-[1.03]",
+        "active:scale-[0.98] active:translate-y-[1px]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--primary))]/45",
         active
           ? "border-[rgb(var(--success))]/45 bg-[rgb(var(--success))]/10 text-[rgb(var(--success))]"
@@ -925,16 +1094,21 @@ function StatusPill({
 function PaymentPill({
   kind,
   onClick,
+  compact,
 }: {
   kind: "paid" | "unpaid";
   onClick: () => void;
+  compact?: boolean;
 }) {
   const paid = kind === "paid";
   return (
     <button
       onClick={onClick}
       className={[
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+        "inline-flex items-center gap-2 rounded-full border text-xs font-semibold",
+        compact ? "px-2.5 py-1" : "px-3 py-1.5",
+        "transition-all duration-200 ease-out hover:brightness-[1.03]",
+        "active:scale-[0.98] active:translate-y-[1px]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--primary))]/45",
         paid
           ? "border-[rgb(var(--success))]/45 bg-[rgb(var(--success))]/10 text-[rgb(var(--success))]"
@@ -970,7 +1144,7 @@ function Field({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border hairline bg-[rgb(var(--muted))]/30 px-4 py-3">
+    <div className="rounded-2xl border hairline bg-[rgb(var(--muted))]/30 px-4 py-3 transition-colors duration-200 ease-out">
       <div className="text-xs muted-text">{label}</div>
       <div className="mt-1 font-medium">{value}</div>
     </div>

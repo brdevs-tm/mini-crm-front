@@ -15,14 +15,27 @@
     @apply p-5;
   }
 
+  /* Smooth base */
+  .smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+  .smooth-fast {
+    @apply transition-all duration-150 ease-out;
+  }
+  .smooth-slow {
+    @apply transition-all duration-300 ease-out;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--muted))] px-4 py-2 text-sm font-medium transition;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[rgb(var(--border))]/80
+    bg-[rgb(var(--muted))] px-4 py-2 text-sm font-medium;
+    @apply transition-all duration-200 ease-out;
   }
   .btn:hover {
     @apply brightness-[1.04];
   }
   .btn:active {
-    @apply translate-y-[1px];
+    @apply translate-y-px scale-[0.99];
   }
   .btn:focus-visible {
     @apply outline-none ring-2 ring-[rgb(var(--primary))]/45;
@@ -43,7 +56,8 @@
   }
 
   .input {
-    @apply w-full rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--card))] px-3 py-2 text-sm transition;
+    @apply w-full rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--card))] px-3 py-2 text-sm;
+    @apply transition-all duration-200 ease-out;
   }
   .input::placeholder {
     @apply text-[rgb(var(--subtext))]/70;
@@ -53,7 +67,8 @@
   }
 
   .select {
-    @apply w-full rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--card))] px-3 py-2 text-sm transition;
+    @apply w-full rounded-xl border border-[rgb(var(--border))]/80 bg-[rgb(var(--card))] px-3 py-2 text-sm;
+    @apply transition-all duration-200 ease-out;
   }
   .select:focus {
     @apply outline-none ring-2 ring-[rgb(var(--primary))]/40 border-[rgb(var(--primary))]/45;
@@ -69,7 +84,7 @@
     @apply p-3;
   }
   .tr {
-    @apply border-b border-[rgb(var(--border))]/55;
+    @apply border-b border-[rgb(var(--border))]/55 transition-colors duration-200 ease-out;
   }
   .tr:hover {
     @apply bg-[rgb(var(--muted))]/70;
@@ -90,15 +105,18 @@
 
   .modal-backdrop {
     @apply fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6;
+    @apply transition-opacity duration-200 ease-out;
   }
   [data-theme="light"] .modal-backdrop {
     @apply bg-black/25;
   }
+
   .modal {
-    @apply w-full max-w-lg rounded-2xl border border-[rgb(var(--border))]/70 bg-[rgb(var(--card))] shadow-[0_12px_30px_-22px_rgba(0,0,0,0.55)];
+    @apply w-full max-w-lg rounded-2xl border border-[rgb(var(--border))]/70 bg-[rgb(var(--card))];
+    @apply shadow-[0_12px_30px_-22px_rgba(0,0,0,0.55)];
+    @apply transition-transform duration-200 ease-out;
   }
 
-  /* Small helpers */
   .muted-text {
     @apply text-[rgb(var(--subtext))];
   }
@@ -106,8 +124,45 @@
     @apply border-[rgb(var(--border))]/60;
   }
 
-  /* Skeleton */
   .skeleton {
     @apply rounded-xl bg-[rgb(var(--muted))]/70 animate-pulse;
+  }
+}
+
+/* Smooth modal animation (works with class toggles) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes popIn {
+  from {
+    transform: translateY(8px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fadeIn 180ms ease-out both;
+}
+.pop-in {
+  animation: popIn 180ms ease-out both;
+}
+
+@layer components {
+  .table-fixed {
+    table-layout: fixed;
+    width: 100%;
+  }
+  .td-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
